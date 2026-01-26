@@ -44,16 +44,24 @@ pub fn contract_unpaused(env: &Env, admin: Address, timestamp: u64) {
     env.events().publish(topics, timestamp);
 }
 
-// pub fn contribution(
-//     env: &Env,
-//     pool_id: u64,
-//     contributor: Address,
-//     asset: Address,
-//     amount: i128,
-//     timestamp: u64,
-//     is_private: bool,
-// ) {
-//     let topics = (Symbol::new(env, "contribution"), pool_id);
-//     env.events()
-//         .publish(topics, (contributor, asset, amount, timestamp, is_private));
-// }
+pub fn token_minted(env: &Env, to: Address, amount: i128, new_total_supply: i128) {
+    let topics = (Symbol::new(env, "token_minted"), to);
+    env.events().publish(topics, (amount, new_total_supply));
+}
+
+pub fn token_transferred(env: &Env, from: Address, to: Address, amount: i128) {
+    let topics = (Symbol::new(env, "token_transferred"), from, to);
+    env.events().publish(topics, amount);
+pub fn contribution(
+    env: &Env,
+    pool_id: u64,
+    contributor: Address,
+    asset: Address,
+    amount: i128,
+    timestamp: u64,
+    is_private: bool,
+) {
+    let topics = (Symbol::new(env, "contribution"), pool_id);
+    env.events()
+        .publish(topics, (contributor, asset, amount, timestamp, is_private));
+}
