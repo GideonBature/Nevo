@@ -22,12 +22,23 @@ pub struct MultiSigConfig {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PoolConfig {
     pub name: String,
-    pub description: String,
     pub target_amount: i128,
     pub is_private: bool,
     pub duration: u64,
     pub created_at: u64,
 }
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PoolMetadata {
+    pub description: String,
+    pub external_url: String,
+    pub image_hash: String,
+}
+
+pub const MAX_DESCRIPTION_LENGTH: u32 = 500;
+pub const MAX_URL_LENGTH: u32 = 200;
+pub const MAX_HASH_LENGTH: u32 = 100;
 
 impl PoolConfig {
     /// Validate pool configuration according to Nevo invariants.
@@ -56,6 +67,24 @@ pub enum PoolState {
     Completed = 2,
     Cancelled = 3,
     Disbursed = 4,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CampaignMetrics {
+    pub total_raised: i128,
+    pub contributor_count: u32,
+    pub last_donation_at: u64,
+}
+
+impl CampaignMetrics {
+    pub fn new() -> Self {
+        Self {
+            total_raised: 0,
+            contributor_count: 0,
+            last_donation_at: 0,
+        }
+    }
 }
 
 #[contracttype]
@@ -94,6 +123,10 @@ pub enum StorageKey {
     Pool(u64),
     PoolState(u64),
     PoolMetrics(u64),
+    AllCampaigns,
+    CampaignMetrics(BytesN<32>),
+    CampaignDonor(BytesN<32>, Address),
+
     NextPoolId,
     IsPaused,
     Admin,
@@ -104,6 +137,7 @@ pub enum StorageKey {
     TokenBalance,
     MultiSigConfig(u64),
     DisbursementRequest(u64, u64),
+    PoolMetadata(u64),
     NextDisbursementId(u64),
 }
 
@@ -117,7 +151,6 @@ mod tests {
         let env = Env::default();
         let cfg = PoolConfig {
             name: String::from_str(&env, "Education Fund"),
-            description: String::from_str(&env, "Scholarships for underprivileged students"),
             target_amount: 1_000_000,
             is_private: false,
             duration: 30 * 24 * 60 * 60,
@@ -133,7 +166,6 @@ mod tests {
         let env = Env::default();
         let cfg = PoolConfig {
             name: String::from_str(&env, "Invalid Target"),
-            description: String::from_str(&env, "Should panic"),
             target_amount: 0,
             is_private: false,
             duration: 30 * 24 * 60 * 60,

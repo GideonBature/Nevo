@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use soroban_sdk::{Address, BytesN, Env, String, Symbol};
 
 use crate::base::types::PoolState;
