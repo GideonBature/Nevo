@@ -179,6 +179,32 @@ impl CrowdfundingTrait for CrowdfundingContract {
             .unwrap_or(Vec::new(&env))
     }
 
+    fn get_active_campaign_count(env: Env) -> u32 {
+        let all_campaigns: Vec<BytesN<32>> = env
+            .storage()
+            .instance()
+            .get(&StorageKey::AllCampaigns)
+            .unwrap_or(Vec::new(&env));
+
+        let now = env.ledger().timestamp();
+        let mut count: u32 = 0;
+
+        for id in all_campaigns.iter() {
+            let campaign_key = (id,);
+            if let Some(campaign) = env
+                .storage()
+                .instance()
+                .get::<_, CampaignDetails>(&campaign_key)
+            {
+                if campaign.deadline > now {
+                    count += 1;
+                }
+            }
+        }
+
+        count
+    }
+
     fn get_donor_count(env: Env, campaign_id: BytesN<32>) -> Result<u32, CrowdfundingError> {
         let campaign_key = (campaign_id.clone(),);
         if !env.storage().instance().has(&campaign_key) {
