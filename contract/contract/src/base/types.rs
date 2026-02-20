@@ -282,7 +282,6 @@ mod tests {
         assert_eq!(metrics.last_donation_at, 0);
     }
 
-
     #[test]
     fn campaign_status_live_when_active() {
         let status = CampaignLifecycleStatus::get_status(100, 1000, 1000000, 500000, false);
@@ -353,7 +352,13 @@ mod tests {
 
     #[test]
     fn campaign_status_large_numbers() {
-        let status = CampaignLifecycleStatus::get_status(1_000_000_000_000, 900_000_000_000, 1000000, 500000, false);
+        let status = CampaignLifecycleStatus::get_status(
+            1_000_000_000_000,
+            900_000_000_000,
+            1000000,
+            500000,
+            false,
+        );
         assert_eq!(status, CampaignLifecycleStatus::Successful);
     }
 }

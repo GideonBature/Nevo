@@ -1105,10 +1105,7 @@ fn test_get_campaign_status_live() {
     client.donate(&id, &donor, &token_address, &500i128);
 
     let status = client.get_campaign_status(&id);
-    assert_eq!(
-        status,
-        crate::base::types::CampaignLifecycleStatus::Live
-    );
+    assert_eq!(status, crate::base::types::CampaignLifecycleStatus::Live);
 }
 
 #[test]
@@ -1172,10 +1169,7 @@ fn test_get_campaign_status_expired() {
     env.ledger().with_mut(|li| li.timestamp = 2000);
 
     let status = client.get_campaign_status(&id);
-    assert_eq!(
-        status,
-        crate::base::types::CampaignLifecycleStatus::Expired
-    );
+    assert_eq!(status, crate::base::types::CampaignLifecycleStatus::Expired);
 }
 
 #[test]

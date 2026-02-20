@@ -5,9 +5,10 @@ use crate::base::{
     errors::CrowdfundingError,
     events,
     types::{
-        CampaignDetails, CampaignLifecycleStatus, CampaignMetrics, Contribution, EmergencyWithdrawal,
-        MultiSigConfig, PoolConfig, PoolContribution, PoolMetadata, PoolMetrics, PoolState,
-        StorageKey, MAX_DESCRIPTION_LENGTH, MAX_HASH_LENGTH, MAX_URL_LENGTH,
+        CampaignDetails, CampaignLifecycleStatus, CampaignMetrics, Contribution,
+        EmergencyWithdrawal, MultiSigConfig, PoolConfig, PoolContribution, PoolMetadata,
+        PoolMetrics, PoolState, StorageKey, MAX_DESCRIPTION_LENGTH, MAX_HASH_LENGTH,
+        MAX_URL_LENGTH,
     },
 };
 use crate::interfaces::crowdfunding::CrowdfundingTrait;
