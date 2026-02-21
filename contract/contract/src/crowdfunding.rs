@@ -1260,4 +1260,8 @@ impl CrowdfundingTrait for CrowdfundingContract {
             .get(&key)
             .ok_or(CrowdfundingError::NotInitialized)
     }
+
+    fn get_contract_version(env: Env) -> String {
+        String::from_str(&env, "1.2.0")
+    }
 }

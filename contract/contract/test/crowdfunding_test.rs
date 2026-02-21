@@ -3262,3 +3262,12 @@ fn test_emergency_contact_multiple_updates() {
     client.set_emergency_contact(&contact3);
     assert_eq!(client.get_emergency_contact(), contact3);
 }
+
+#[test]
+fn test_get_contract_version() {
+    let env = Env::default();
+    let (client, _, _) = setup_test(&env);
+
+    let version = client.get_contract_version();
+    assert_eq!(version, String::from_str(&env, "1.2.0"));
+}
