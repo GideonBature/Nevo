@@ -49,6 +49,11 @@ pub trait CrowdfundingTrait {
         amount: i128,
     ) -> Result<(), CrowdfundingError>;
 
+    fn get_campaign_fee_history(
+        env: Env,
+        campaign_id: BytesN<32>,
+    ) -> Result<i128, CrowdfundingError>;
+
     fn create_pool(
         env: Env,
         creator: Address,

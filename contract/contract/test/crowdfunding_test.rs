@@ -278,6 +278,60 @@ fn test_multiple_campaigns() {
 // Pool Storage Tests
 
 #[test]
+fn test_get_campaign_fee_history() {
+    let env = Env::default();
+    let (client, admin, token_address) = setup_test(&env);
+
+    // Using token_admin pattern from other tests
+    let token_admin = Address::generate(&env);
+    let token_client = token::Client::new(&env, &token_address);
+    let token_admin_client = token::StellarAssetClient::new(&env, &token_address);
+
+    let creator = Address::generate(&env);
+    let donor = Address::generate(&env);
+    let campaign_id = create_test_campaign_id(&env, 12);
+    let title = String::from_str(&env, "Fee Test Campaign");
+    let goal = 1_000_000i128;
+    let initial_deadline = env.ledger().timestamp() + 86400; // +1 day
+
+    client.create_campaign(
+        &campaign_id,
+        &title,
+        &creator,
+        &goal,
+        &initial_deadline,
+        &token_address,
+    );
+
+    // Initial fees should be 0
+    let initial_fees = client.get_campaign_fee_history(&campaign_id);
+    assert_eq!(initial_fees, 0);
+
+    // Setup donor balance
+    token_admin_client.mint(&donor, &1_000_000i128);
+
+    // Donate
+    let donation_amount = 500_000i128; // 1% should be 5_000
+
+    // We mock auth to allow transfer to crowdfunding contract and execute donate
+    client.donate(&campaign_id, &donor, &token_address, &donation_amount);
+
+    // Verify counter incremented correctly
+    let current_fees = client.get_campaign_fee_history(&campaign_id);
+    assert_eq!(current_fees, 5_000);
+
+    // Second donation
+    let donation2_amount = 200_000i128; // 1% should be 2_000
+    client.donate(&campaign_id, &donor, &token_address, &donation2_amount);
+
+    // Fees should compound (5000 + 2000)
+    let total_fees = client.get_campaign_fee_history(&campaign_id);
+    assert_eq!(total_fees, 7_000);
+}
+
+// Pool Storage Tests
+
+#[test]
 fn test_save_pool() {
     let env = Env::default();
     env.mock_all_auths();
