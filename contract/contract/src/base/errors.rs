@@ -52,6 +52,5 @@ pub enum CrowdfundingError {
     PoolNotDisbursedOrRefunded = 46,
     InvalidGoalUpdate = 47,
     InsufficientFees = 48,
-    InsufficientFees = 47,
-    UserBlacklisted = 48,
+    UserBlacklisted = 49,
 }
