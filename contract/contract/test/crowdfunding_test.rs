@@ -2786,7 +2786,14 @@ fn test_update_campaign_goal_success() {
     let goal = 10_000i128;
     let deadline = env.ledger().timestamp() + 86400;
 
-    client.create_campaign(&campaign_id, &title, &creator, &goal, &deadline, &token_address);
+    client.create_campaign(
+        &campaign_id,
+        &title,
+        &creator,
+        &goal,
+        &deadline,
+        &token_address,
+    );
 
     // Mock auth for update
     client.update_campaign_goal(&campaign_id, &5_000i128);
@@ -2806,7 +2813,14 @@ fn test_update_campaign_goal_increase_fails() {
     let goal = 10_000i128;
     let deadline = env.ledger().timestamp() + 86400;
 
-    client.create_campaign(&campaign_id, &title, &creator, &goal, &deadline, &token_address);
+    client.create_campaign(
+        &campaign_id,
+        &title,
+        &creator,
+        &goal,
+        &deadline,
+        &token_address,
+    );
 
     // Try to increase goal - should fail
     let result = client.try_update_campaign_goal(&campaign_id, &15_000i128);
@@ -2824,7 +2838,14 @@ fn test_update_campaign_goal_below_raised_fails() {
     let goal = 10_000i128;
     let deadline = env.ledger().timestamp() + 86400;
 
-    client.create_campaign(&campaign_id, &title, &creator, &goal, &deadline, &token_address);
+    client.create_campaign(
+        &campaign_id,
+        &title,
+        &creator,
+        &goal,
+        &deadline,
+        &token_address,
+    );
 
     // Donate
     let donor = Address::generate(&env);
@@ -2849,13 +2870,23 @@ fn test_update_campaign_goal_expired_fails() {
     let goal = 10_000i128;
     let deadline = env.ledger().timestamp() + 86400;
 
-    client.create_campaign(&campaign_id, &title, &creator, &goal, &deadline, &token_address);
+    client.create_campaign(
+        &campaign_id,
+        &title,
+        &creator,
+        &goal,
+        &deadline,
+        &token_address,
+    );
 
     // Advance time past deadline
     env.ledger().with_mut(|li| li.timestamp = deadline + 1);
 
     let result = client.try_update_campaign_goal(&campaign_id, &5_000i128);
     assert_eq!(result, Err(Ok(CrowdfundingError::CampaignExpired)));
+}
+
+#[test]
 fn test_get_active_campaign_count() {
     let env = Env::default();
     let (client, _, token_address) = setup_test(&env);

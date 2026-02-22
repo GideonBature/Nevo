@@ -331,6 +331,8 @@ impl CrowdfundingTrait for CrowdfundingContract {
         events::campaign_goal_updated(&env, campaign_id, new_goal);
 
         Ok(())
+    }
+
     fn get_campaign_status(
         env: Env,
         campaign_id: BytesN<32>,
