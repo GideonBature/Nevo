@@ -51,6 +51,12 @@ pub trait CrowdfundingTrait {
         amount: i128,
     ) -> Result<(), CrowdfundingError>;
 
+    fn update_campaign_goal(
+        env: Env,
+        campaign_id: BytesN<32>,
+        new_goal: i128,
+    ) -> Result<(), CrowdfundingError>;
+
     fn extend_campaign_deadline(
         env: Env,
         campaign_id: BytesN<32>,
