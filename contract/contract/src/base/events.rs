@@ -31,8 +31,10 @@ pub fn pool_created(
     deadline: u64,
 ) {
     let topics = (Symbol::new(env, "pool_created"), pool_id, creator);
-    env.events()
-        .publish(topics, (name, description, target_amount, min_contribution, deadline));
+    env.events().publish(
+        topics,
+        (name, description, target_amount, min_contribution, deadline),
+    );
 }
 
 pub fn pool_state_updated(env: &Env, pool_id: u64, new_state: PoolState) {
