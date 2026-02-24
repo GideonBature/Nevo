@@ -1017,6 +1017,11 @@ impl CrowdfundingTrait for CrowdfundingContract {
             .get(&state_key)
             .unwrap_or(PoolState::Active);
 
+        // Reject contributions to closed pools
+        if state == PoolState::Closed {
+            return Err(CrowdfundingError::PoolAlreadyClosed);
+        }
+
         if state != PoolState::Active {
             return Err(CrowdfundingError::InvalidPoolState);
         }
@@ -1320,11 +1325,14 @@ impl CrowdfundingTrait for CrowdfundingContract {
     }
 
     fn close_pool(env: Env, pool_id: u64, caller: Address) -> Result<(), CrowdfundingError> {
+        if Self::is_paused(env.clone()) {
+            return Err(CrowdfundingError::ContractPaused);
+        }
         caller.require_auth();
 
         // Validate pool exists
         let pool_key = StorageKey::Pool(pool_id);
-        let _pool: PoolConfig = env
+        let pool: PoolConfig = env
             .storage()
             .instance()
             .get(&pool_key)
@@ -1343,23 +1351,41 @@ impl CrowdfundingTrait for CrowdfundingContract {
             return Err(CrowdfundingError::PoolAlreadyClosed);
         }
 
-        // Only allow closing if pool is in Disbursed or Cancelled state
-        if current_state != PoolState::Disbursed && current_state != PoolState::Cancelled {
-            return Err(CrowdfundingError::PoolNotDisbursedOrRefunded);
-        }
+        // Get pool creator
+        let creator_key = StorageKey::PoolCreator(pool_id);
+        let creator: Option<Address> = env.storage().instance().get(&creator_key);
 
-        // Verify caller is admin or pool creator
+        // Get admin
         let admin: Address = env
             .storage()
             .instance()
             .get(&StorageKey::Admin)
             .ok_or(CrowdfundingError::NotInitialized)?;
 
-        // For now, we'll check if there's a creator stored separately
-        // Since PoolConfig doesn't have creator field, we'll allow admin only
-        // In a real implementation, you might want to add creator to PoolConfig or store it separately
-        if caller != admin {
+        // Check authorization: caller must be either the pool creator or admin
+        let is_creator = creator.as_ref().map_or(false, |c| c == &caller);
+        let is_admin = caller == admin;
+
+        if !is_creator && !is_admin {
             return Err(CrowdfundingError::Unauthorized);
+        }
+
+        // For private pools, allow owner to close at any time (except already closed states)
+        // For admin, allow closing only after Disbursed or Cancelled
+        if is_creator && pool.is_private {
+            // Owner can close private pool in Active, Paused, Cancelled, or Disbursed state
+            if current_state != PoolState::Active
+                && current_state != PoolState::Paused
+                && current_state != PoolState::Cancelled
+                && current_state != PoolState::Disbursed
+            {
+                return Err(CrowdfundingError::InvalidPoolState);
+            }
+        } else {
+            // Admin or non-private pools can only be closed after Disbursed or Cancelled
+            if current_state != PoolState::Disbursed && current_state != PoolState::Cancelled {
+                return Err(CrowdfundingError::PoolNotDisbursedOrRefunded);
+            }
         }
 
         // Update state to Closed
