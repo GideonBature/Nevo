@@ -1,5 +1,8 @@
 use crate::crowdfunding::CrowdfundingContract;
 
+#[cfg(test)]
+extern crate std;
+
 #[test]
 fn test_calculate_platform_fee_zero_amount() {
     let fee = CrowdfundingContract::calculate_platform_fee(0, 250);

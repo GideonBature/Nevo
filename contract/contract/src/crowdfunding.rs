@@ -39,7 +39,7 @@ impl CrowdfundingContract {
     /// let fee = calculate_platform_fee(10_000, 250);
     /// assert_eq!(fee, 250); // 2.5% of 10,000 = 250
     /// ```
-    fn calculate_platform_fee(amount: i128, fee_bps: u32) -> i128 {
+    pub(crate) fn calculate_platform_fee(amount: i128, fee_bps: u32) -> i128 {
         // Basis points: 10,000 bps = 100%
         const BPS_DENOMINATOR: i128 = 10_000;
 
