@@ -186,4 +186,6 @@ pub trait CrowdfundingTrait {
         caller: Address,
         new_metadata_hash: String,
     ) -> Result<(), CrowdfundingError>;
+
+    fn get_pool_remaining_time(env: Env, pool_id: u64) -> Result<u64, CrowdfundingError>;
 }

@@ -67,6 +67,20 @@ impl CrowdfundingContract {
 #[contractimpl]
 #[allow(clippy::too_many_arguments)]
 impl CrowdfundingTrait for CrowdfundingContract {
+    fn get_pool_remaining_time(env: Env, pool_id: u64) -> Result<u64, CrowdfundingError> {
+        let pool_key = StorageKey::Pool(pool_id);
+        let pool: PoolConfig = env
+            .storage()
+            .instance()
+            .get(&pool_key)
+            .ok_or(CrowdfundingError::PoolNotFound)?;
+
+        let deadline: u64 = pool.created_at + pool.duration;
+        let now: u64 = env.ledger().timestamp();
+
+        Ok(deadline.saturating_sub(now))
+    }
+
     fn create_campaign(
         env: Env,
         id: BytesN<32>,
