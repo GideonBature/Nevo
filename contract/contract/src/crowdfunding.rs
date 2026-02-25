@@ -19,6 +19,51 @@ use crate::interfaces::crowdfunding::CrowdfundingTrait;
 #[contract]
 pub struct CrowdfundingContract;
 
+// Internal helper functions
+impl CrowdfundingContract {
+    /// Calculate platform fee based on basis points.
+    ///
+    /// # Arguments
+    /// * `amount` - The donation amount to calculate fee from
+    /// * `fee_bps` - Fee in basis points (e.g., 250 for 2.5%)
+    ///
+    /// # Returns
+    /// The calculated fee amount
+    ///
+    /// # Panics
+    /// Panics if the calculation would overflow
+    ///
+    /// # Examples
+    /// ```
+    /// // 2.5% fee (250 basis points) on 10,000 tokens
+    /// let fee = calculate_platform_fee(10_000, 250);
+    /// assert_eq!(fee, 250); // 2.5% of 10,000 = 250
+    /// ```
+    pub(crate) fn calculate_platform_fee(amount: i128, fee_bps: u32) -> i128 {
+        // Basis points: 10,000 bps = 100%
+        const BPS_DENOMINATOR: i128 = 10_000;
+
+        // Validate inputs
+        assert!(amount >= 0, "amount must be non-negative");
+        assert!(fee_bps <= 10_000, "fee_bps must be <= 10,000 (100%)");
+
+        // Use checked multiplication to prevent overflow
+        // Formula: (amount * fee_bps) / 10,000
+        let fee_bps_i128 = fee_bps as i128;
+
+        // Check for potential overflow before multiplication
+        if amount > 0 && fee_bps_i128 > i128::MAX / amount {
+            panic!("fee calculation would overflow");
+        }
+
+        let numerator = amount
+            .checked_mul(fee_bps_i128)
+            .expect("fee calculation overflow");
+
+        numerator / BPS_DENOMINATOR
+    }
+}
+
 #[contractimpl]
 #[allow(clippy::too_many_arguments)]
 impl CrowdfundingTrait for CrowdfundingContract {
