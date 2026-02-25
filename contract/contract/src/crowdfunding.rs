@@ -95,11 +95,6 @@ impl CrowdfundingTrait for CrowdfundingContract {
         }
         creator.require_auth();
 
-        // Check if creator is blacklisted
-        if Self::is_blacklisted(env.clone(), creator.clone()) {
-            return Err(CrowdfundingError::UserBlacklisted);
-        }
-
         if title.is_empty() {
             return Err(CrowdfundingError::InvalidTitle);
         }
@@ -436,11 +431,6 @@ impl CrowdfundingTrait for CrowdfundingContract {
         let cancellation_key = StorageKey::CampaignCancelled(campaign_id.clone());
         if env.storage().instance().has(&cancellation_key) {
             return Err(CrowdfundingError::CampaignCancelled);
-        }
-
-        // Check if donor is blacklisted
-        if Self::is_blacklisted(env.clone(), donor.clone()) {
-            return Err(CrowdfundingError::UserBlacklisted);
         }
 
         // Validate donation amount
@@ -1146,6 +1136,20 @@ impl CrowdfundingTrait for CrowdfundingContract {
             .instance()
             .set(&contributor_key, &updated_contribution);
 
+        // Track contributor in the list for pagination
+        if existing_contribution.amount == 0 {
+            let contributors_key = StorageKey::PoolContributors(pool_id);
+            let mut contributors: Vec<Address> = env
+                .storage()
+                .instance()
+                .get(&contributors_key)
+                .unwrap_or(Vec::new(&env));
+            contributors.push_back(contributor.clone());
+            env.storage()
+                .instance()
+                .set(&contributors_key, &contributors);
+        }
+
         // Emit event
         events::contribution(
             &env,
@@ -1577,101 +1581,53 @@ impl CrowdfundingTrait for CrowdfundingContract {
         String::from_str(&env, "1.2.0")
     }
 
-    fn blacklist_address(env: Env, address: Address) -> Result<(), CrowdfundingError> {
-        let admin: Address = env
-            .storage()
-            .instance()
-            .get(&StorageKey::Admin)
-            .ok_or(CrowdfundingError::NotInitialized)?;
-        admin.require_auth();
-
-        let blacklist_key = StorageKey::Blacklist(address.clone());
-        env.storage().persistent().set(&blacklist_key, &true);
-
-        events::address_blacklisted(&env, admin, address);
-
-        Ok(())
-    }
-
-    fn unblacklist_address(env: Env, address: Address) -> Result<(), CrowdfundingError> {
-        let admin: Address = env
-            .storage()
-            .instance()
-            .get(&StorageKey::Admin)
-            .ok_or(CrowdfundingError::NotInitialized)?;
-        admin.require_auth();
-
-        let blacklist_key = StorageKey::Blacklist(address.clone());
-        env.storage().persistent().remove(&blacklist_key);
-
-        events::address_unblacklisted(&env, admin, address);
-
-        Ok(())
-    }
-
-    fn is_blacklisted(env: Env, address: Address) -> bool {
-        let blacklist_key = StorageKey::Blacklist(address);
-        env.storage()
-            .persistent()
-            .get(&blacklist_key)
-            .unwrap_or(false)
-    }
-
-    fn update_pool_metadata_hash(
+    fn get_pool_contributions_paginated(
         env: Env,
         pool_id: u64,
-        caller: Address,
-        new_metadata_hash: String,
-    ) -> Result<(), CrowdfundingError> {
-        if CrowdfundingContract::is_paused(env.clone()) {
-            return Err(CrowdfundingError::ContractPaused);
-        }
-        caller.require_auth();
-
-        // Validate metadata hash length
-        if new_metadata_hash.len() > MAX_HASH_LENGTH {
-            return Err(CrowdfundingError::InvalidMetadata);
-        }
-
+        offset: u32,
+        limit: u32,
+    ) -> Result<Vec<PoolContribution>, CrowdfundingError> {
+        // Validate pool exist
         // Check if pool exists
         let pool_key = StorageKey::Pool(pool_id);
         if !env.storage().instance().has(&pool_key) {
             return Err(CrowdfundingError::PoolNotFound);
         }
 
-        // Verify caller is the pool creator
-        let creator_key = StorageKey::PoolCreator(pool_id);
-        let creator: Address = env
+        // Get the list of contributors
+        let contributors_key = StorageKey::PoolContributors(pool_id);
+        let contributors: Vec<Address> = env
             .storage()
             .instance()
-            .get(&creator_key)
-            .ok_or(CrowdfundingError::PoolNotFound)?;
+            .get(&contributors_key)
+            .unwrap_or(Vec::new(&env));
 
-        if caller != creator {
-            return Err(CrowdfundingError::Unauthorized);
+        let total_contributors = contributors.len();
+
+        // Validate offset
+        if offset >= total_contributors {
+            return Ok(Vec::new(&env));
         }
 
-        // Get existing metadata
-        let metadata_key = StorageKey::PoolMetadata(pool_id);
-        let mut metadata: PoolMetadata =
-            env.storage()
-                .persistent()
-                .get(&metadata_key)
-                .unwrap_or(PoolMetadata {
-                    description: String::from_str(&env, ""),
-                    external_url: String::from_str(&env, ""),
-                    image_hash: String::from_str(&env, ""),
-                });
+        // Calculate the end index
+        let end = (offset + limit).min(total_contributors);
 
-        // Update the image hash
-        metadata.image_hash = new_metadata_hash.clone();
+        // Collect contributions for the requested range
+        let mut result = Vec::new(&env);
+        for i in offset..end {
+            if let Some(contributor_addr) = contributors.get(i) {
+                let contribution_key =
+                    StorageKey::PoolContribution(pool_id, contributor_addr.clone());
+                if let Some(contribution) = env
+                    .storage()
+                    .instance()
+                    .get::<StorageKey, PoolContribution>(&contribution_key)
+                {
+                    result.push_back(contribution);
+                }
+            }
+        }
 
-        // Save updated metadata
-        env.storage().persistent().set(&metadata_key, &metadata);
-
-        // Emit event
-        events::pool_metadata_updated(&env, pool_id, caller, new_metadata_hash);
-
-        Ok(())
+        Ok(result)
     }
 }
